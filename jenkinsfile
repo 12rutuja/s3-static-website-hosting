@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    environment {
+        // Setting default AWS region
+        AWS_DEFAULT_REGION = 'eu-north-1'
+    }
+    
+    stages {
+        stage('Checkout Code') {
+            steps {
+                echo 'Checking out code from GitHub...'
+                git branch: 'main', url: 'https://github.com/12rutuja/s3-static-website-hosting.git'
+            }
+        }
+        stage('Verify AWS CLI') {
+            steps {
+                echo 'Verifying AWS CLI installation...'
+                script {
+                    def awsVersion = sh(script: 'aws --version', returnStatus: true)
+                    if (awsVersion != 0) {
+                        error "AWS CLI is not installed or not accessible in the environment."
+                    }
+                }
+            }
+        }
+        stage('Configure AWS Credentials') {
+            steps {
+                echo 'Configuring AWS credentials...'
+                script {
+                    // You can set AWS credentials here if you're using AWS IAM roles or environment variables
+                    // Example: setting up environment variables for AWS credentials
+                   
+                        sh '''
+                        # Verify the credentials work
+                        aws s3 ls
+                        '''
+
+                }
+            }
+        }
+        stage('Upload to S3') {
+            steps {
+                echo 'Uploading files to S3 bucket...'
+                script {
+                    sh '''
+                    aws s3 cp index.html s3://bucketforstaticwebsites/ --region $AWS_DEFAULT_REGION
+                    '''
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Deployment completed successfully!'
+        }
+        failure {
+            echo 'Deployment failed. Please check the logs.'
+        }
+    }
+}
